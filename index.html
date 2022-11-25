@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title></title>
+  <style type="text/css">
+    .flex-center {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .flex-both {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .difficulty {
+      height: 60px;
+      font-size: 28px;
+      font-weight: bold;
+    }
+    .difficulty .level {
+      padding: 0 10px;
+      color: red;
+      font-size: 40px;
+    }
+
+    .container {
+      position: relative;
+      width: 800px;
+      height: 600px;
+      background-color: #000000;
+      margin: 0 auto;
+      overflow: hidden;
+    }
+    .tank-game-container {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      top: 0;
+    }
+    .bottom-btn {
+      width: 800px;
+      margin: 20px auto;
+    }
+    .btn {
+      width: 100px;
+      height: 30px;
+      color: #ffffff;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .btn:hover {
+      opacity: 0.8;
+    }
+    .start-game,
+    .continue-game,
+    .next-game {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      margin-left: -50px;
+      margin-top: -15px;
+      background-color: blue;
+      z-index: 1;
+    }
+    .continue-game,
+    .next-game {
+      display: none;
+    }
+    .end-game {
+      display: none;
+      background-color: orange;
+    }
+    .stop-game {
+      display: none;
+      background-color: green;
+    }
+
+    .tank {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+    }
+    .tank:after {
+      position: absolute;
+      left: 10px;
+      top: -10px;
+      content: '';
+      width: 10px;
+      height: 10px;
+      background-color: red;
+      border-radius: 50%;
+    }
+    .red:after {
+      background-color: red;
+    }
+    .yellow:after {
+      background-color: yellow;
+    }
+    .bullet {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="flex-center difficulty">
+    第<div class="level">1</div>关
+  </div>
+  <div class="container">
+    <div class="tank-game-container"></div>
+    <div class="flex-center btn start-game">开始游戏</div>
+    <div class="flex-center btn continue-game">继续游戏</div>
+    <div class="flex-center btn next-game">下一关</div>
+  </div>
+  <div class="flex-both bottom-btn">
+    <div class="flex-center btn end-game">结束游戏</div>
+    <div class="flex-center btn stop-game">暂停游戏</div>
+  </div>
+
+  <script type="text/javascript">
+
+    // 游戏面板(容器)
+    const $gameEl = document.querySelector('.tank-game-container')
+    // 游戏难度
+    const $levelEl = document.querySelector('.level')
+    // 开始、结束、暂停、继续、下一关游戏按钮
+    const $startEl = document.querySelector('.start-game')
+    const $endEl = document.querySelector('.end-game')
+    const $stopEl = document.querySelector('.stop-game')
+    const $continueEl = document.querySelector('.continue-game')
+    const $nextEl = document.querySelector('.next-game')
+
+    // 子弹类
+    class Bullet {
+      bulletNode = null  // 子弹节点
+      bulletCode = 65  // 方向
+      exist = true  // 是否存在
+      // 位置
+      x = 0
+      y = 0
+
+      constructor (options) {
+        // 初始化值
+        this.x = options.x + 10
+        this.y = options.y + 10
+        this.bulletCode = options.keyCode
+        this.bgColor = options.bgColor
+
+        // 创建子弹
+        this.bulletNode = this.createBulletNode()
+        // 添加子弹到容器中
+        $gameEl.appendChild(this.bulletNode)
+      }
+
+      // 创建子弹节点
+      createBulletNode () {
+        const $bullet = document.createElement('div')
+
+        $bullet.classList.add('bullet')
+        $bullet.style.backgroundColor = this.bgColor
+        $bullet.style.left = this.x + 'px'
+        $bullet.style.top = this.y + 'px'
+
+        return $bullet
+      }
+
+      // 设置子弹位置
+      setBulletPosition () {
+        switch(this.bulletCode) {
+          case 65:   // 左
+            this.x = this.x - 10
+            break;
+          case 87:   // 上
+            this.y = this.y - 10
+            break;
+          case 68:   // 右
+            this.x = this.x + 10
+            break;
+          case 83:   // 下
+            this.y = this.y + 10
+            break;
+          default:
+            return
+        }
+
+        // 溢出删除
+        if (this.x > 795 || this.x < 0 || this.y > 595 || this.y < 0) {
+          this.exist = false
+          return
+        }
+
+        this.bulletNode.style.left = this.x + 'px'
+        this.bulletNode.style.top = this.y + 'px'
+      }
+    }
+    
+    // 坦克类
+    class Tank {
+      tankNode = null  // 坦克节点
+      TankBullets = []  // 子弹(多)
+      tankCode = 65  // 方向
+      exist = true  // 是否存在
+      // 位置
+      x = 0
+      y = 0
+
+      constructor(bgColor) {
+        this.bgColor = bgColor  // 背景色
+
+        // 随机设置坦克位置
+        this.x = Math.floor(Math.random() * 770)
+        this.y = Math.floor(Math.random() * 570)
+
+        // 创建坦克节点
+        this.tankNode = this.createTankNode()
+        // 设置方向
+        this.setTankDirection()
+        // 添加坦克到容器中
+        $gameEl.appendChild(this.tankNode)
+        // 初始化位置
+        this.setTankPosition()
+      }
+
+      // 设置坦克方向
+      setTankDirection () {
+        const codeArr = [65, 87, 68, 83]
+        const randomNum = Math.floor(Math.random() * 4)
+        const code = codeArr[randomNum]
+
+        this.tankCode = code
+      }
+
+      // 创建坦克节点
+      createTankNode () {
+        const $tank = document.createElement('div')
+
+        $tank.classList.add('tank', this.bgColor)
+        $tank.style.backgroundColor = this.bgColor
+        $tank.style.left = this.x + 'px'
+        $tank.style.top = this.y + 'px'
+
+        return $tank
+      }
+
+      // 根据方向，设置坦克位置
+      setTankPosition () {
+        let rotate = 0  // 旋转度数
+        switch(this.tankCode) {
+          case 65:   // 左
+            this.x = (this.x - 5) > 0 ? (this.x - 5) : 0
+            rotate = -90
+            break;
+          case 87:   // 上
+            this.y = (this.y - 5) > 0 ? (this.y - 5) : 0
+            break;
+          case 68:   // 右
+            this.x = (this.x + 5) < 770 ? (this.x + 5) : 770
+            rotate = 90
+            break;
+          case 83:   // 下
+            this.y = (this.y + 5) < 570 ? (this.y + 5) : 570
+            rotate = 180
+            break;
+          default:
+            return
+        }
+
+        this.tankNode.style.transform = `rotate(${rotate}deg)`
+        this.tankNode.style.left = this.x + 'px'
+        this.tankNode.style.top = this.y + 'px'
+      }
+
+      // 创建子弹类, 最多5个
+      createTankBullet () {
+        // 最多5颗子弹
+        if (this.TankBullets.length > 5) return
+
+        // 创建子弹
+        const bullet = new Bullet({
+          x: this.x,
+          y: this.y,
+          keyCode: this.tankCode,
+          bgColor: this.bgColor
+        })
+        this.TankBullets.push(bullet)
+      }
+
+      // 设置坦克子弹位置
+      setTankBulletPosition () {
+        for (let i = 0; i < this.TankBullets.length; i++) {
+          const bullet = this.TankBullets[i]
+          // 如果子弹已出界(坦克不存在), 删除该子弹
+          if (!bullet.exist || !this.exist) {
+            $gameEl.removeChild(bullet.bulletNode)
+            this.TankBullets.splice(i, 1)
+            i--
+          } else {
+            bullet.setBulletPosition()
+          }
+        }
+      }
+    }
+
+    // 游戏类
+    class RunGame {
+      MyTank = null  // 我方坦克
+      EnemyTanks = []  // 敌方坦克(多)
+      speed = 1  // 难度(级别)
+      status = 0   // 游戏状态 0=结束游戏,1=游戏中,2=暂停游戏
+      timeDirection = null  // 方向定时器
+      timeMove = null  // 移动定时器
+      timeKey = null  // 键盘定时器
+
+      constructor () {
+        // 监听键盘事件
+        this.keyboard()
+        // 绑定开始游戏事件
+        this.bindEvent()
+      }
+
+      bindEvent () {
+        // 绑定开始游戏事件
+        $startEl.onclick = () => {
+          this.startGame()
+        }
+        // 绑定结束游戏事件
+        $endEl.onclick = () => {
+          this.endGame()
+        }
+        // 绑定暂停游戏事件
+        $stopEl.onclick = () => {
+          this.stopGame()
+        }
+        // 绑定继续游戏事件
+        $continueEl.onclick = () => {
+          this.continueGame()
+        }
+        // 绑定下一关游戏事件
+        $nextEl.onclick = () => {
+          this.startGame()
+        }
+      }
+
+      // 开始游戏
+      startGame () {
+
+        $levelEl.innerText = this.speed
+
+        // 显示结束、暂停按钮
+        $endEl.style.display = 'flex'
+        $stopEl.style.display = 'flex'
+        // 隐藏开始、下一关、继续按钮
+        $startEl.style.display = 'none'
+        $nextEl.style.display = 'none'
+        $continueEl.style.display = 'none'
+
+        // 创建我方坦克
+        this.MyTank = new Tank('yellow')
+        // 创建敌方坦克
+        for (let i = 0; i < this.speed * 2; i++) {
+          this.EnemyTanks.push(new Tank('red'))
+          // 创建后立即发射子弹
+          this.EnemyTanks[i].createTankBullet()
+        }
+
+        // 设置为游戏中
+        this.status = 1
+        // 开启定时器处理坦克
+        this.tankThread()
+      }
+
+      // 结束游戏
+      endGame (status = 0) {
+
+        // 结束游戏状态 0=结束游戏  1=下一关
+        if (status === 0) {  // 结束游戏
+          $startEl.style.display = 'flex'
+          $nextEl.style.display = 'none'
+        } else {  // 下一关
+          $nextEl.style.display = 'flex'
+          $startEl.style.display = 'none'
+        }
+        // 隐藏继续、结束、暂停按钮
+        $continueEl.style.display = 'none'
+        $endEl.style.display = 'none'
+        $stopEl.style.display = 'none'
+
+        // 关闭定时器
+        clearInterval(this.timeDirection)
+        clearInterval(this.timeMove)
+        clearInterval(this.timeKey)
+
+        // 删除我方坦克和子弹
+        if (this.MyTank != null) {
+          this.deleteTank(this.MyTank)
+        }
+        // 删除敌方坦克和子弹
+        if (this.EnemyTanks.length > 0) {
+          for (let i = 0; i < this.EnemyTanks.length; i++) {
+            const tank = this.EnemyTanks[i]
+            this.deleteTank(tank)
+            this.EnemyTanks.splice(i, 1)
+            i--
+          }
+        }
+
+        // 初始化值
+        this.status = 0
+        this.MyTank = null
+        this.EnemyTanks = []
+      }
+
+      // 暂停游戏
+      stopGame () {
+        // 显示继续、结束按钮
+        $continueEl.style.display = 'flex'
+        $endEl.style.display = 'flex'
+        // 隐藏下一关、开始、暂停按钮
+        $nextEl.style.display = 'none'
+        $startEl.style.display = 'none'
+        $stopEl.style.display = 'none'
+
+        // 关闭定时器
+        clearInterval(this.timeDirection)
+        clearInterval(this.timeMove)
+        clearInterval(this.timeKey)
+
+        // 设置为暂停
+        this.status = 2
+      }
+
+      // 继续游戏
+      continueGame () {
+        // 显示结束、暂停按钮
+        $endEl.style.display = 'flex'
+        $stopEl.style.display = 'flex'
+        // 隐藏下一关、开始、继续按钮
+        $nextEl.style.display = 'none'
+        $startEl.style.display = 'none'
+        $continueEl.style.display = 'none'
+
+        // 设置为游戏中
+        this.status = 1
+        // 开启定时器处理坦克
+        this.tankThread()
+      }
+
+      // 删除坦克
+      deleteTank (tank) {
+        // 设置坦克不存在
+        tank.exist = false
+        // 删除坦克对应子弹
+        tank.setTankBulletPosition()
+        // 删除坦克
+        $gameEl.removeChild(tank.tankNode)
+      }
+
+      // 监听键盘事件
+      keyboard (e) {
+        let upFlag = true  // 键盘是否抬起
+
+        // 监听键盘按下事件
+        // 只有按下键盘时，才修改我方坦克位置
+        document.onkeydown = (e) => {
+          const code = e.keyCode
+
+          // 按下enter可以开始、暂停、继续游戏
+          if (code === 13) {
+            if (this.status === 0) {  // 结束 -> 游戏中
+              this.status = 1
+              this.startGame()
+            } else if (this.status === 1) {  // 游戏中 -> 暂停
+              this.status = 2
+              this.stopGame()
+            } else if (this.status === 2) {  // 暂停 -> 游戏中
+              this.status = 1
+              this.continueGame()
+            }
+          }
+
+          // 不为游戏中则不监听其它键盘事件
+          if (this.status !== 1) return
+
+          // 根据不同的 keyCode 做功能
+          if ([65, 87, 83, 68].includes(code)) {  // 'a、w、s、d' 修改方向
+            // 只有按下的键与上一次不同或者键盘已抬起时(可能抬起和按下的键为同一个)，才允许设置移动位置
+            if (code != this.MyTank.tankCode || upFlag) {
+              // 设置键盘为按
+              upFlag = false
+              // 保存方向(keyCode)
+              this.MyTank.tankCode = code
+              // 关闭上一个定时器
+              clearInterval(this.timeKey)
+              // 通过定时器来设置位置，更流畅
+              // 根据难度，设置不同的移动速度
+              this.timeKey = setInterval(() => {
+                this.MyTank.setTankPosition()
+              }, (100 / this.speed))
+            }
+          } else if (code === 74) {  // 'j' 发射子弹
+            this.MyTank.createTankBullet()
+          }
+        }
+
+        // 监听键盘抬起事件
+        document.onkeyup = (e) => {
+          const code = e.keyCode
+
+          // 不为游戏中则不监听其它键盘事件
+          if (this.status !== 1) return
+
+          // 当抬起为方向键并且为当前方向时，允许继续按下任何一个方向键进行移动
+          if ([65, 87, 83, 68].includes(code)) {
+            if (code === this.MyTank.tankCode) {
+              clearInterval(this.timeKey)
+              upFlag = true
+            }
+          }
+        }
+      }
+
+      // 处理坦克事务
+      tankThread () {
+
+        // 隔n秒，修改敌方坦克方向, 创建对应坦克子弹
+        this.timeDirection = setInterval(() => {
+          this.EnemyTanks.forEach(tank => {
+            // 修改敌方坦克方向
+            tank.setTankDirection()
+            // 创建敌方子弹
+            tank.createTankBullet()
+          })
+        }, (5000 / this.speed))
+
+        // 隔n毫秒，修改坦克(子弹)位置
+        this.timeMove = setInterval(() => {
+
+          // 如果我方坦克(敌方坦克)全部被消灭，则结束游戏
+          if (!this.MyTank.exist) {  // 我方坦克被消灭
+            return this.endGame()
+          }
+          if (this.EnemyTanks.length === 0) {  // 敌方坦克全部被消灭
+            // 提升游戏难度
+            this.speed += 1
+            return this.endGame(1)
+          }
+
+          // 修改我方坦克子弹位置
+          this.MyTank.setTankBulletPosition()
+
+          // 修改敌方坦克(子弹)位置
+          for (let i = 0; i < this.EnemyTanks.length; i++) {
+            const tank = this.EnemyTanks[i]
+            tank.setTankPosition()
+            tank.setTankBulletPosition()
+
+            // 判断敌方坦克是否被我方子弹击中
+            this.hitTank(tank, this.MyTank.TankBullets)
+            // 判断我方坦克是否被敌方子弹击中
+            this.hitTank(this.MyTank, tank.TankBullets)
+
+            // 如果坦克被击中，则删除该坦克
+            if (!tank.exist) {
+              this.deleteTank(tank)
+              this.EnemyTanks.splice(i, 1)
+              i--
+            }
+          }
+        }, (100 / this.speed))
+      }
+
+      // 检查坦克是否被击中
+      hitTank (tank, bullets) {
+        for (let i = 0; i < bullets.length; i++) {
+          const bullet = bullets[i]
+          const bX = bullet.x + 5
+          const bY = bullet.y + 5
+          // 以子弹中心点为准, 如果子弹在坦克的范围内，则判断为击中
+          if (bullet.exist && tank.exist && tank.x < bX && (tank.x + 30) > bX && tank.y < bY && (tank.y + 30) > bY) {
+            // 坦克不存在
+            tank.exist = false
+            // 子弹不存在
+            bullet.exist = false
+          }
+        }
+      }
+    }
+
+    new RunGame()
+  </script>
+
+</body>
+</html>
