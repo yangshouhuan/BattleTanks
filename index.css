@@ -1,0 +1,102 @@
+.flex-center {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .flex-both {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .difficulty {
+      height: 60px;
+      font-size: 28px;
+      font-weight: bold;
+    }
+    .difficulty .level {
+      padding: 0 10px;
+      color: red;
+      font-size: 40px;
+    }
+
+    .container {
+      position: relative;
+      width: 800px;
+      height: 600px;
+      background-color: #000000;
+      margin: 0 auto;
+      overflow: hidden;
+    }
+    .tank-game-container {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      top: 0;
+    }
+    .bottom-btn {
+      width: 800px;
+      margin: 20px auto;
+    }
+    .btn {
+      width: 100px;
+      height: 30px;
+      color: #ffffff;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .btn:hover {
+      opacity: 0.8;
+    }
+    .start-game,
+    .continue-game,
+    .next-game {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      margin-left: -50px;
+      margin-top: -15px;
+      background-color: blue;
+      z-index: 1;
+    }
+    .continue-game,
+    .next-game {
+      display: none;
+    }
+    .end-game {
+      display: none;
+      background-color: orange;
+    }
+    .stop-game {
+      display: none;
+      background-color: green;
+    }
+
+    .tank {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+    }
+    .tank:after {
+      position: absolute;
+      left: 10px;
+      top: -10px;
+      content: '';
+      width: 10px;
+      height: 10px;
+      background-color: red;
+      border-radius: 50%;
+    }
+    .red:after {
+      background-color: red;
+    }
+    .yellow:after {
+      background-color: yellow;
+    }
+    .bullet {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
