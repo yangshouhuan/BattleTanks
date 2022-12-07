@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title></title>
+  <style type="text/css">
+    .item {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100px;
+      height: 100px;
+      background-color: red;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="item"></div>
+
+  <script type="text/javascript">
+    
+    /*
+        actionList 行为数据
+        {
+            @action      行为
+            @oldValue    旧数据
+            @newValue    新数据
+        }
+    */
+    let actionList = []   // 行为列表
+    let actionIndex = 0   // 行为索引
+    const el = document.querySelector('.item')  // 元素
+
+    // 修改元素样式
+    function update (data, cb) {
+
+        let oldValue = null
+        const { type, value } = data
+
+        switch (type) {
+            case 'width':
+                oldValue = el.style.width
+                el.style.width = value
+                break
+            case 'height':
+                oldValue = el.style.height
+                el.style.height = value
+                break
+            case 'left':
+                oldValue = el.style.left
+                el.style.left = value
+                break
+            case 'top':
+                oldValue = el.style.top
+                el.style.top = value
+                break
+            case 'bg_color':
+                oldValue = el.style.backgroundColor
+                el.style.backgroundColor = value
+                break
+            default: break
+        }
+        cb({oldValue, type, value})
+    }
+
+    // 监听键盘事件
+    ;(function () {
+      window.addEventListener('keydown', function (event) {
+          const ctrlKey = event.ctrlKey
+          const keyCode = event.keyCode
+
+          if (!ctrlKey) return
+
+          // 这里仅做撤销/恢复监听
+          if (keyCode === 90) { // 撤销
+              actionIndex = actionIndex < actionList.length ? actionIndex : actionList.length - 1
+              if (actionIndex > -1) {
+                  const {type, value} = actionList[actionIndex--]
+                  update({type, value, key: 'z'}, ({oldValue}) => {
+                    actionList[actionIndex + 1].value = oldValue
+                  })
+              }
+          } else if (keyCode === 89) { // 恢复
+              actionIndex = actionIndex > -1 ? actionIndex + 1 : 0
+              if (actionIndex < actionList.length) {
+                  const {type, value} = actionList[actionIndex]
+                  update({type, value, key: 'y'}, ({oldValue}) => {
+                    actionList[actionIndex].value = oldValue
+                  })
+              }
+          }
+      })
+    })();
+
+    // 模仿手动修改样式
+    function pipe(...args) {
+      const fn = args.splice(0, 1)[0]
+
+      fn && setTimeout(() => {
+        fn()
+        pipe(...args)
+      }, 300)
+    }
+    // 重新添加行为，把撤销后的行为删除掉, 重新设置索引
+    function addAction ({oldValue, type}) {
+      if (actionIndex < actionList.length - 1) {
+        actionList.splice(actionIndex + 1)
+      }
+      actionList.push({ type, value: oldValue})
+      actionIndex = actionList.length - 1
+    }
+    pipe(
+      () => update({type: 'width', value: '200px'}, addAction),
+      () => update({type: 'height', value: '200px'}, addAction),
+      () => update({type: 'left', value: '200px'}, addAction),
+      () => update({type: 'top', value: '200px'}, addAction),
+      () => update({type: 'bg_color', value: 'green'}, addAction),
+      () => update({type: 'left', value: '400px'}, addAction),
+      () => update({type: 'top', value: '400px'}, addAction),
+    )
+
+  </script>
+
+</body>
+</html>

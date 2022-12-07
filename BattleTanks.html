@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title></title>
-  <link rel="stylesheet" type="text/css" href="./index.css">
+  <link rel="stylesheet" type="text/css" href="./css/BattleTanks.css">
 </head>
 <body>
 
@@ -41,6 +41,7 @@
       bulletCode = 65  // 方向
       exist = true  // 是否存在
       // 位置
+
       x = 0
       y = 0
 
@@ -219,31 +220,6 @@
       constructor () {
         // 监听键盘事件
         this.keyboard()
-        // 绑定开始游戏事件
-        this.bindEvent()
-      }
-
-      bindEvent () {
-        // 绑定开始游戏事件
-        $startEl.onclick = () => {
-          this.startGame()
-        }
-        // 绑定结束游戏事件
-        $endEl.onclick = () => {
-          this.endGame()
-        }
-        // 绑定暂停游戏事件
-        $stopEl.onclick = () => {
-          this.stopGame()
-        }
-        // 绑定继续游戏事件
-        $continueEl.onclick = () => {
-          this.continueGame()
-        }
-        // 绑定下一关游戏事件
-        $nextEl.onclick = () => {
-          this.startGame()
-        }
       }
 
       // 开始游戏
@@ -491,7 +467,30 @@
       }
     }
 
-    new RunGame()
+    const runGame = new RunGame();
+    // 绑定开始游戏事件
+    (function (runGame) {
+      // 绑定开始游戏事件
+      $startEl.onclick = () => {
+        runGame.startGame()
+      }
+      // 绑定结束游戏事件
+      $endEl.onclick = () => {
+        runGame.endGame()
+      }
+      // 绑定暂停游戏事件
+      $stopEl.onclick = () => {
+        runGame.stopGame()
+      }
+      // 绑定继续游戏事件
+      $continueEl.onclick = () => {
+        runGame.continueGame()
+      }
+      // 绑定下一关游戏事件
+      $nextEl.onclick = () => {
+        runGame.startGame()
+      }
+    })(runGame);
   </script>
 
 </body>
